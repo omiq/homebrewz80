@@ -1,0 +1,32 @@
+Name     addresslogic ;
+PartNo   01 ;
+Date     2020-03-07 ;
+Revision 04 ;
+Designer CG ;
+Company  Makerhacks ;
+Assembly None ;
+Location  ;
+Device   G22v10 ;
+
+/* *************** INPUT PINS *********************/
+PIN 1    = A15                     	  	; /* Address line 15                */ 
+PIN 2    = MEMRQ                   	  	; /* Memory Request                 */ 
+PIN 3    = RFSH					; /* Memory Refresh                 */	
+PIN 4    = IORQ					; /* IO request                     */	
+
+/* *************** OUTPUT PINS *********************/
+PIN 22   = RAMCE                      		; /* RAM enable                      */ 
+PIN 23	  = ROMCE					; /* ROM enable                      */ 
+PIN 21   = IOE					; /* IO enable                       */ 
+/* *************** LOGIC       *********************/
+
+!RAMCE = !MEMRQ & A15 & RFSH & IORQ		; /* Put RAMCE LOW when MEMRQ is LOW and A15 is HIGH (upper 32kb) */
+
+!ROMCE = !MEMRQ & !A15 & RFSH & IORQ		; /* Put ROMCE LOW when MEMRQ is LOW and A15 is LOW (bottom 32kb) */
+
+IOE = !IORQ						; /* Put IO enable high when IORQ is low                          */
+
+
+
+
+

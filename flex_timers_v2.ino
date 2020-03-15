@@ -24,9 +24,9 @@ void toggle_clock()
 
 
       PORTD |= 0b00100000; // sets digital pin 5 HIGH
-        sleep(20);
+        sleep(10);
       PORTD &= 0b00000000; // sets digital pin 5 LOW
-        sleep(20);
+        sleep(10);
 
 }
 
@@ -47,7 +47,7 @@ void manual_auto()
   {
 
     if(digitalRead(FAST_SLOW_MODE) )
-    { mgr.addListener(new EvtTimeListener(10, true, (EvtAction)toggle_clock)); }
+    { mgr.addListener(new EvtTimeListener(1, true, (EvtAction)toggle_clock)); }
     else 
     { mgr.addListener(new EvtTimeListener(1000, true, (EvtAction)toggle_clock)); }
   }
