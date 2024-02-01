@@ -3,9 +3,9 @@
 #define BUTTON_PIN 7
 
 // Initialize the speed to OFF
-unsigned int speed = 0;
-unsigned int oldSpeed = 0;
-unsigned int steps = 0;
+int speed = 0;
+int oldSpeed = 0;
+int steps = 0;
 
 void sleep(int sleep_time)
 {
@@ -27,7 +27,7 @@ void toggle_clock()
 }
 
 // Single increment of the clock
-bool single_step()
+void single_step()
 {
   toggle_clock();
   Serial.print("STEP ");
@@ -62,11 +62,11 @@ void loop()
   // What is the pot set to?
   speed = analogRead(AUTO);
   
-  if(speed != oldSpeed) {
+  if(abs(speed-oldSpeed)>30) {
 
     oldSpeed = speed;
 
-    if(speed == 1023) 
+    if(speed > 1000) 
     {
       // Manual stepping listener
       Serial.println("AUTO OFF");
@@ -84,7 +84,7 @@ void loop()
   {
       sleep(10);
 
-      if(speed == 1023) {
+      if(speed > 1000) {
         if(digitalRead(BUTTON_PIN))
         {
           single_step();
