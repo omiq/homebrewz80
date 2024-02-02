@@ -31,17 +31,17 @@ def m_pin_handler(p):
     
 def io_pin_handler(p):
     if IOREQ.value()==False:
-        print("IO: ON")
+        print(top + down + "IO: ON")
     sleep(0.1) # wait for 0.1 second
 
 def w_pin_handler(p):
     if MREQ.value()==False:
-        print("W: ON")
+        print(top + down + "W: ON")
     sleep(0.1) # wait for 0.1 second
 
 def r_pin_handler(p):
     if MREQ.value()==False:
-        print("R: ON")
+        print(top + down + "R: ON")
     sleep(0.1) # wait for 0.1 second
 
 
@@ -130,10 +130,11 @@ print(".",end='')
 sleep(0.1)
 print(".")
 sleep(0.1)
+print(clear)
 
 while True:
     
-    print(clearline)
+    print(top)
     
     print(bold + "MR:" + reset + str(MREQ.value()),end='')
     print(bold + " IO:" + reset  + str(IOREQ.value()),end='')
@@ -149,5 +150,6 @@ while True:
     print(A3.value(),end='')
     print(A2.value(),end='')
     print(A1.value())
+    print(clearline)
     
 
