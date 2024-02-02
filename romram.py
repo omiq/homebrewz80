@@ -142,14 +142,13 @@ while True:
     print(bold + " WR:" + reset  + str(WR.value()),end='')
     print(bold + " ADDR: " + reset , end='')
     
-    print(A8.value(),end='')
-    print(A7.value(),end='')
-    print(A6.value(),end='')
-    print(A5.value(),end='')
-    print(A4.value(),end='')
-    print(A3.value(),end='')
-    print(A2.value(),end='')
-    print(A1.value())
+    print(int(A8.value()),end='')
+    print(int(A6.value()),end='')
+    print(int(A5.value()),end='')
+    print(int(A4.value()),end='')
+    print(int(A3.value()),end='')
+    print(int(A2.value()),end='')
+    print(int(A1.value()))
     print(clearline)
     
 
