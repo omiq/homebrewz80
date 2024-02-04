@@ -1,6 +1,7 @@
 #define AUTO  A0
 #define CLOCKLED 5
 #define BUTTON_PIN 7
+#define RESET_PIN 9
 
 // Initialize the speed to OFF
 int speed = 0;
@@ -43,6 +44,7 @@ void setup() {
   pinMode(CLOCKLED, OUTPUT);  
   pinMode(BUTTON_PIN, INPUT);
   pinMode(AUTO, INPUT);
+  pinMode(RESET_PIN, OUTPUT);
 
   // initialize serial communication 
   Serial.begin(115200);
@@ -53,6 +55,17 @@ void setup() {
 
   Serial.print("STEP: ");
   Serial.println(digitalRead(BUTTON_PIN));
+
+
+  // Reset the computer
+  digitalWrite(RESET_PIN, LOW);
+  single_step();
+  single_step();
+  single_step();
+  single_step();
+  single_step();
+  digitalWrite(RESET_PIN, HIGH);
+
 
 }
 
@@ -82,7 +95,6 @@ void loop()
   }
   else
   {
-      sleep(10);
 
       if(speed > 1000) {
         if(digitalRead(BUTTON_PIN))
