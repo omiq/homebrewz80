@@ -5,6 +5,14 @@ from ansi import *
 from machine import Pin
 from utime import sleep
 
+
+# Get the address pins
+def get_address():
+    this_address = 0
+    for address_pin in reversed(address):
+         this_address = (this_address << 1) + address_pin.value()
+    return this_address
+
 # Set the pins to correct values
 def set_pins(pins, data):
     for pin in pins:
@@ -16,21 +24,6 @@ def set_pins(pins, data):
         data = (data >> 1)
 
   
-def io_pin_handler(p):
-    if IOREQ.value()==False:
-        print(top + down + "IO: ON")
-    sleep(0.1) # wait for 0.1 second
-
-def w_pin_handler(p):
-    if WR.value()==False:
-        print(top + down + "W: ON")
-    sleep(0.1) # wait for 0.1 second
-
-def r_pin_handler(p):
-    if RD.value()==False:
-        print(top + down + "R: ON")
-    sleep(0.1) # wait for 0.1 second
-
 # Clock Ticks
 tick = 0
 
@@ -44,18 +37,10 @@ led_pin = Pin("LED", Pin.OUT)
 
 # Write and Read signals
 WR = Pin("GP0", Pin.IN)
-#WR.irq(handler=w_pin_handler,trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING)
-
 RD = Pin("GP1", Pin.IN)
-#RD.irq(handler=r_pin_handler,trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING)
 
 # IO Request
 IOREQ = Pin("GP27", Pin.IN, Pin.PULL_UP)
-#IOREQ.irq(handler=io_pin_handler,trigger=Pin.IRQ_RISING)
-
-# Memory Request
-# MREQ = Pin("GP28", Pin.IN)
-# MREQ.irq(handler=m_pin_handler,trigger=Pin.IRQ_RISING)
 
 # Address Pins
 address = []
@@ -74,30 +59,21 @@ for pin_number in data_pins:
 print(clear)
 print()
 print("Boot",end='')
-sleep(2)
-print(" ",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".",end='')
-sleep(0.1)
-print(".")
-sleep(0.1)
-print(clear)
+
+
+# Output the Z80 values
+def print_status(is_IO, is_reading, is_writing, this_address, this_data):
+    print(top)         
+    print('{:8}'.format(tick), end='') 
+    print(bold + " IO: " + reset, abs(is_IO),end='')
+    print(bold + " RD: " + reset, abs(is_reading), end='')
+    print(bold + " WR: " + reset, abs(is_writing), end='')
+    print(bold + " Address: {:#018b}".format(this_address), reset, end='')
+    print(bold + " Data: {:#010b}".format(this_data), reset, end='')
+    print(bold + " {:#06x}".format(this_data), reset)
+    print()  
+    print(clearline)
+
 
 # Handle providing or writing data at an address
 def romram(pin):
@@ -106,40 +82,48 @@ def romram(pin):
     this_address = 0
     this_data = 0
 
-    for address_pin in reversed(address):
-         this_address = (this_address << 1) + address_pin.value()
+    led_pin.toggle()
+
+    # Check if IO
+    is_IO = not (IOREQ.value())
 
     # When RD is low then z80 is reading
-    is_reading = RD.value()
-    if(is_reading == 0):
-        
+    is_reading = not (RD.value())
+
+    # Check if is writing
+    is_writing = not (WR.value())    
+
+    # Reading from memory
+    if(is_reading and not is_IO):
+        this_address = get_address()
         for data_pin in reversed(datavalues):
             data_pin.init(mode=Pin.OUT)
         set_pins(datavalues, ram_memory[this_address])
         this_data = ram_memory[this_address]
+        tick = tick + 1 
+        print_status(is_IO, is_reading, is_writing, this_address, this_data)
 
-    # Assuming is writing    
-    else:
+    # Writing to memory
+    elif(is_writing and not is_IO):
+        this_address = get_address()
         for data_pin in reversed(datavalues):
             data_pin.init(mode=Pin.IN)
         for data_pin in reversed(datavalues):
             this_data = (this_data << 1) + data_pin.value()
             ram_memory[this_address] = this_data
+        tick = tick + 1
+        print_status(is_IO, is_reading, is_writing, this_address, this_data)
 
-    print(top)         
-    print('{:8}'.format(tick), end='') 
-    print(bold + " IO: " + reset  + str(IOREQ.value()),end='')
-    print(bold + " RD: " + reset, is_reading, end='')
-    print(bold + " WR: " + reset  + str(WR.value()), end='')
-    print(bold + " Address: " + reset, '0x{:04x}'.format(this_address), end='')
-    print(bold + " Data: " + reset, bin(this_data))
+    # We shouldn't respond    
+    else:
+        this_address = get_address()
+        tick = tick + 1
+
     
-    print()  
-    print(clearline)
-    
-    tick = tick + 1
+
 
 
 # Clock
 Clock = Pin("GP28", Pin.IN)
 Clock.irq(handler=romram, trigger=Pin.IRQ_RISING)
+
