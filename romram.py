@@ -5,6 +5,9 @@ from ansi import *
 from machine import Pin
 from utime import sleep
 
+is_IO = False
+is_reading = False
+is_writing = False   
 
 # Get the address pins
 def get_address():
@@ -28,8 +31,33 @@ def set_pins(pins, data):
 tick = 0
 
 # ROM/RAM
-ram_memory = []
-for b in range(16384):
+ram_memory = [
+            0x3e, 0x48, #LDA H
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x65, #LDA e
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x6c, #LDA l
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x6c, #LDA l
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x6f, #LDA o
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x20, #LDA _
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x57, #LDA W
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x6f, #LDA o
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x72, #LDA r
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x6c, #LDA l
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x64, #LDA d
+            0xd3, 0x00, #       OUTA 0
+            0x3e, 0x21, #LDA 1
+            0xd3, 0x00, #       OUTA 0
+]
+for b in range(16384-len(ram_memory)):
     ram_memory.append(0)
 
 # LED status light
@@ -40,7 +68,7 @@ WR = Pin("GP0", Pin.IN)
 RD = Pin("GP1", Pin.IN)
 
 # IO Request
-IOREQ = Pin("GP27", Pin.IN, Pin.PULL_UP)
+IOREQ = Pin(27, Pin.IN, Pin.PULL_UP)
 
 # Address Pins
 address = []
@@ -55,10 +83,6 @@ data_pins = [16,17,18,19,20,21,22,26]
 for pin_number in data_pins:
     datavalues.append(Pin(pin_number, Pin.OUT))
 
-# Blink
-print(clear)
-print()
-print("Boot",end='')
 
 
 # Output the Z80 values
@@ -68,9 +92,10 @@ def print_status(is_IO, is_reading, is_writing, this_address, this_data):
     print(bold + " IO: " + reset, abs(is_IO),end='')
     print(bold + " RD: " + reset, abs(is_reading), end='')
     print(bold + " WR: " + reset, abs(is_writing), end='')
-    print(bold + " Address: {:#018b}".format(this_address), reset, end='')
-    print(bold + " Data: {:#010b}".format(this_data), reset, end='')
-    print(bold + " {:#06x}".format(this_data), reset)
+    print(bold + " Address:" + reset + " {:#018b}".format(this_address), end='')
+    print(bold + " Data:" + reset + " {:#010b}".format(this_data), end='')
+    print(" {:#06x}".format(this_data), reset, end='')
+    print(chr(this_data))
     print()  
     print(clearline)
 
@@ -85,13 +110,13 @@ def romram(pin):
     led_pin.toggle()
 
     # Check if IO
-    is_IO = not (IOREQ.value())
+    is_IO = (IOREQ.value()==0)
 
     # When RD is low then z80 is reading
-    is_reading = not (RD.value())
+    is_reading = (RD.value()==0)
 
     # Check if is writing
-    is_writing = not (WR.value())    
+    is_writing = (WR.value()==0)    
 
     # Reading from memory
     if(is_reading and not is_IO):
@@ -100,30 +125,39 @@ def romram(pin):
             data_pin.init(mode=Pin.OUT)
         set_pins(datavalues, ram_memory[this_address])
         this_data = ram_memory[this_address]
-        tick = tick + 1 
-        print_status(is_IO, is_reading, is_writing, this_address, this_data)
 
     # Writing to memory
-    elif(is_writing and not is_IO):
+    if(is_writing and not is_IO):
         this_address = get_address()
         for data_pin in reversed(datavalues):
             data_pin.init(mode=Pin.IN)
         for data_pin in reversed(datavalues):
             this_data = (this_data << 1) + data_pin.value()
             ram_memory[this_address] = this_data
-        tick = tick + 1
-        print_status(is_IO, is_reading, is_writing, this_address, this_data)
 
-    # We shouldn't respond    
-    else:
+
+    if(is_IO):
+
         this_address = get_address()
-        tick = tick + 1
 
-    
+        for data_pin in reversed(datavalues):
+            data_pin.init(mode=Pin.OUT)
+        set_pins(datavalues, ram_memory[this_address])
+        this_data = ram_memory[this_address]
+
+    print_status(is_IO, is_reading, is_writing, this_address, this_data)
+    tick = tick + 1
 
 
-
-# Clock
+# Clock input
 Clock = Pin("GP28", Pin.IN)
 Clock.irq(handler=romram, trigger=Pin.IRQ_RISING)
 
+# Boot
+print(clear)
+print()
+print("Boot",end='')
+
+# Read "ROM" data as binary into memory array
+#with open("z80.bin", mode='rb') as file: 
+#    ram_memory = bytearray(file.read())
