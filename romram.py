@@ -1,26 +1,19 @@
 # rshell -p /dev/tty.usbmodem1231401
 # minicom -D /dev/tty.usbmodem1231401 -b 115200
 
+from ansi import *
 from machine import Pin
 from utime import sleep
 
-# ANSI
-reset = "\u001b[0m"
-bold = "\u001b[1m"
-underline = "\u001b[4m"
-reverse = "\u001b[7m"
-clear = "\u001b[2J"
-clearline = "\u001b[2K"
-up = "\u001b[1A"
-down = "\u001b[1B"
-right = "\u001b[1C"
-left = "\u001b[1D"
-nextline = "\u001b[1E"
-prevline = "\u001b[1F"
-top = "\u001b[0;0H"
-
-def gotoxy(x, y):
-    return f"\u001b[{y};{x}H"
+# Set the pins to correct values
+def set_pins(pins, data):
+    for pin in pins:
+        this_bit = data & 0x01
+        if(this_bit == 1):
+            pin.on()
+        else:
+            pin.off()
+        data = (data >> 1)
 
 def m_pin_handler(p):
     if MREQ.value():
@@ -44,7 +37,13 @@ def r_pin_handler(p):
         print(top + down + "R: ON")
     sleep(0.1) # wait for 0.1 second
 
+# Clock Ticks
+tick = 0
 
+# ROM/RAM
+memory = []
+for b in range(65536):
+    memory.append(0)
 
 # LED status light
 led_pin = Pin("LED", Pin.OUT)
@@ -58,54 +57,29 @@ RD.irq(handler=r_pin_handler,trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING)
 
 # IO Request
 IOREQ = Pin("GP27", Pin.IN, Pin.PULL_UP)
-IOREQ.irq(handler=io_pin_handler,trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING)
+IOREQ.irq(handler=io_pin_handler,trigger=Pin.IRQ_RISING)
 
 # Memory Request
-MREQ = Pin("GP28", Pin.IN)
-MREQ.irq(handler=m_pin_handler,trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING)
+# MREQ = Pin("GP28", Pin.IN)
+# MREQ.irq(handler=m_pin_handler,trigger=Pin.IRQ_RISING)
 
 # Address Pins
+address = []
+address_pins = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 print("Address pins 1-14")
-A1 = Pin("GP2", Pin.IN)
-A2 = Pin("GP3", Pin.IN)
-A3 = Pin("GP4", Pin.IN)
-A4 = Pin("GP5", Pin.IN)
-A5 = Pin("GP6", Pin.IN)
-A6 = Pin("GP7", Pin.IN)
-A7 = Pin("GP8", Pin.IN)
-A8 = Pin("GP9", Pin.IN)
-A9 = Pin("GP10", Pin.IN) 
-A10 = Pin("GP11", Pin.IN)
-A11 = Pin("GP12", Pin.IN)
-A12 = Pin("GP13", Pin.IN)
-A13 = Pin("GP14", Pin.IN)
-A14 = Pin("GP15", Pin.IN)
+for pin_number in address_pins:
+    address.append(Pin(pin_number, Pin.IN, Pin.PULL_DOWN))
 
 # Data pins
-D1 = Pin("GP16", Pin.OUT)
-D2 = Pin("GP17", Pin.OUT)
-D3 = Pin("GP18", Pin.OUT)
-D4 = Pin("GP19", Pin.OUT)
-D5 = Pin("GP20", Pin.OUT)
-D6 = Pin("GP21", Pin.OUT)
-D7 = Pin("GP22", Pin.OUT)
-D8 = Pin("GP26", Pin.OUT)
-
-# Set to NOP
-D1.value(0)
-D2.value(0)
-D3.value(0)
-D4.value(0)
-D5.value(0)
-D6.value(0)
-D7.value(0)
-D8.value(0)
-
-
-
+datavalues = []
+data_pins = [16,17,18,19,20,21,22,26]
+for pin_number in data_pins:
+    datavalues.append(Pin(pin_number, Pin.OUT))
+    datavalues[pin_number].value(0) # Set to NOP
 
 # Blink
 print(clear)
+print()
 print("Boot",end='')
 sleep(2)
 print(" ",end='')
@@ -132,23 +106,50 @@ print(".")
 sleep(0.1)
 print(clear)
 
-while True:
+# Handle providing or writing data at an address
+def romram(pin):
+    global tick
     
-    print(top)
+    this_address = 0
+    this_data = 0
+
+    for address_pin in reversed(address):
+         this_address = (this_address << 1) + address_pin.value()
+
+    # When RD is low then z80 is reading
+    is_reading = RD.value()
+    if(is_reading == 0):
+        
+        for data_pin in reversed(datavalues):
+            data_pin.init(mode=Pin.OUT)
+        set_pins(datavalues, memory[this_address])
+        this_data = memory[this_address]
+
+    # Assuming is writing    
+    else:
+        for data_pin in reversed(datavalues):
+            data_pin.init(mode=Pin.IN)
+        for data_pin in reversed(datavalues):
+            this_data = (this_data << 1) + data_pin.value()
+            memory[this_address] = this_data
+
+    print(top)         
+    print(tick, "RD: ", is_reading, "Address:", '0x{:04x}'.format(this_address), "Data:", '0x{:04x}'.format(datavalues),end='')
     
-    print(bold + "MR:" + reset + str(MREQ.value()),end='')
     print(bold + " IO:" + reset  + str(IOREQ.value()),end='')
-    print(bold + " RD:" + reset  + str(RD.value()),end='')
     print(bold + " WR:" + reset  + str(WR.value()),end='')
-    print(bold + " ADDR: " + reset , end='')
+
     
-    print(int(A8.value()),end='')
-    print(int(A6.value()),end='')
-    print(int(A5.value()),end='')
-    print(int(A4.value()),end='')
-    print(int(A3.value()),end='')
-    print(int(A2.value()),end='')
-    print(int(A1.value()))
+    print(address)
     print(clearline)
     
+    tick = tick + 1
+
+
+# Clock
+Clock = Pin("GP28", Pin.IN)
+Clock.irq(handler=romram,trigger=Pin.IRQ_RISING)
+
+  
+
 
