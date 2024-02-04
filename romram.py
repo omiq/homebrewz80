@@ -103,9 +103,9 @@ def print_status():
     print(" {:#06x}".format(this_data), reset, end='')
     
     if this_data < 126 and this_data > 31:
-        print(chr(this_data))
+        print(chr(this_data), end='')
     else:
-        print()
+        print("", end='')
     
     print()  
     print(clearline)
