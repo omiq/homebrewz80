@@ -18,7 +18,7 @@ this_data = 0
 
 # Address Pins
 address = []
-address_pins = [2,3,4,5,6,7,8,9,10,11,12,13,14]
+address_pins = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 for pin_number in address_pins:
     address.append(Pin(pin_number, Pin.IN))
 
@@ -125,7 +125,7 @@ def print_status():
     print(bold + " Data:" + reset + " {:#010b}".format(this_data), end='')
     print(" {:#06x}".format(this_data), reset, end='')
     
-    if this_data < 126 and this_data > 31:
+    if this_data < 126 and this_data >= 32:
         print(chr(this_data), end='')
     else:
         print("", end='')
@@ -182,14 +182,7 @@ def rd_handler(pin):
 # IO Handler
 def io_handler(pin):
 
-    global tick, is_IO, is_reading, is_writing, this_address, address, this_data, datavalues, ram_memory
-    this_address = get_address()
-    # WAIT.value(0)
-    for data_pin in reversed(datavalues):
-        data_pin.init(mode=Pin.OUT)
-    set_pins(datavalues, ram_memory[this_address])
-    this_data = ram_memory[this_address]
-    # WAIT.value(1)
+    global tick, is_IO, is_reading, is_writing, this_address, address, this_data, datavalues, ram_memory  
     print_status()
     tick = tick + 1
 
@@ -207,7 +200,9 @@ def clock_tick(timer):
     if(IOREQ.value()==0): io_handler(IOREQ)  
 
 # Fill rest of the 8kb with NOP
-for b in range(8191-len(ram_memory)):
+# 8kb = 8181
+# 16kb = 16382
+for b in range(16382-len(ram_memory)):
     ram_memory.append(0)
 
 # Interupts
@@ -229,3 +224,9 @@ print("Memory: ", len(ram_memory))
 
 # Clock input
 Clock_Timer.init(mode=Timer.PERIODIC, callback=clock_tick, freq=50)
+
+
+
+
+
+    
