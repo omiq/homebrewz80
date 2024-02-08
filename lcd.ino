@@ -23,7 +23,7 @@ char read_data() {
 void output_lcd() 
 {
   char data;
-  char buffer[32];
+  char buffer[16];
   delay(10);
   data = read_data();
   sprintf(buffer, "%c", data);
