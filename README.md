@@ -1,6 +1,8 @@
 # homebrewz80
 ## Homebrew Z80 retro computer
-![Uploading 842576C7-B7B8-461A-BCA2-FE706A61D42E.jpeg…]()
+
+![842576C7-B7B8-461A-BCA2-FE706A61D42E](https://github.com/omiq/homebrewz80/assets/3143825/825b6de8-940f-438a-bc5c-78b34fabfbc7)
+
 
 * Arduino version of the clock is clock.ino
 
