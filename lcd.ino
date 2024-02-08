@@ -2,7 +2,7 @@
 #include <LCD-I2C.h>
 #define IOREQ 2
 
-
+bool io_old = 1;
 int data_pins[8] = { 4, 5, 6, 7, 8, 9, 10, 11 };
 LCD_I2C lcd(0x27, 16, 2);  // Default address of most PCF8574 modules, change according
 
@@ -29,12 +29,6 @@ void output_lcd()
   lcd.print(buffer);
 }
 
-void irq() {
-
-  output_lcd();
-
-}
-
 void setup() {
 
   // Init the LCD
@@ -50,7 +44,10 @@ void setup() {
 
   // This will fire our IRQ handler any time the pin goes low
   pinMode(IOREQ, INPUT);
-  attachInterrupt(0, irq, FALLING);
+
+
+  // Wanted to do this but it didn't work  
+  // attachInterrupt(0, output_lcd, FALLING);
 
   // Clear the screen and output message
   lcd.clear();
@@ -64,11 +61,14 @@ void setup() {
 
 void loop() {
 
-  if (digitalRead(IOREQ) == 0) {
+  if (digitalRead(IOREQ) == 0 && io_old == 1) {
+    output_lcd(); 
+    io_old == 0;
     digitalWrite(LED_BUILTIN, 1);
-    delay(100);
+    delay(10);
   } else {
     digitalWrite(LED_BUILTIN, 0);
-    delay(100);
+    io_old == 1;
+    delay(10);
   }
 }
