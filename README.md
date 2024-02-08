@@ -7,5 +7,7 @@ ROMRAM.py is for a Pico to act as a small and slow rom/ram replacement with anot
 
 ROMRAM_AND_CLOCK.py has a clock as well as simulating memory
 
+ROMRAM_LCD.py is the version meant to hook up with an Arduino watching for IO to display a message on a 16x2 LCD (using LCD.ino)
+
 ## Pins
 ![z80](https://github.com/omiq/homebrewz80/assets/3143825/7c75b8a1-4bfe-41c0-9afe-8f05304f57cf) ![pico](https://github.com/omiq/homebrewz80/assets/3143825/bad4f9af-2141-4885-a3b5-b17e15a122d6)
